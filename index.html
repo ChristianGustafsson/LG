@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Är vi ett verkligt team?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="kicker">Ledningsgruppstest</span>
+    <h1>Är vi ett verkligt team?</h1>
+    <p class="lede">Åtta påståenden om hur ledningsgruppen fungerar. Svara enskilt och ärligt utifrån hur det är i dag, inte hur det borde vara. Resultaten summeras utan namn så att ni ser var ni har samsyn och var bilderna går isär.</p>
+    <div class="status" id="status"></div>
+  </header>
+
+  <!-- SETUP SAKNAS -->
+  <section id="viewSetup" class="panel stack hidden">
+    <h2>Testet är inte kopplat till en databas än</h2>
+    <p>Fyll i <code>config.js</code> med adressen och den publika nyckeln från ert Supabase-projekt. Instruktioner finns i README.</p>
+  </section>
+
+  <!-- START: SKAPA GRUPP -->
+  <section id="viewStart" class="stack hidden">
+    <div class="panel stack">
+      <h2>Skapa ett test för din ledningsgrupp</h2>
+      <p class="muted">Du får två länkar: en som du skickar till alla i gruppen och en adminlänk som bara du behåller. Ingen behöver skapa konto.</p>
+      <form id="createForm" class="row" novalidate>
+        <input type="text" id="groupName" placeholder="T.ex. Ledningsgruppen Norden" aria-label="Gruppens namn" maxlength="120" style="flex:1;min-width:220px">
+        <button class="btn" type="submit" id="createBtn">Skapa test</button>
+      </form>
+      <p class="msg" id="createMsg"></p>
+    </div>
+    <div id="createdBox" class="panel stack hidden"></div>
+    <div id="myGroups" class="panel stack hidden"><h3>Tester du har skapat i den här webbläsaren</h3><div class="stack" id="myGroupsList"></div></div>
+  </section>
+
+  <nav class="tabs hidden" id="tabs" aria-label="Vyer">
+    <a href="#test" id="tabTest">Gör testet</a>
+    <a href="#resultat" id="tabRes">Resultat</a>
+    <a href="#admin" id="tabAdmin" class="hidden">Admin</a>
+  </nav>
+
+  <!-- TEST -->
+  <section id="viewTest" class="stack hidden">
+    <div class="panel howto">
+      <span><b>Ja</b> = 2 poäng</span><span><b>Delvis</b> = 1 poäng</span><span><b>Nej</b> = 0 poäng</span>
+      <span>Max 16 poäng. Tar cirka fem minuter.</span>
+    </div>
+    <form id="form" class="stack" novalidate>
+      <div id="questions"></div>
+      <div class="panel stack">
+        <label class="field" for="mission">Beskriv ledningsgruppens gemensamma uppdrag och viktigaste mål med egna ord
+          <small>Skriv utan att stämma av med någon. Beskrivningarna jämförs sedan sida vid sida, utan namn.</small>
+          <textarea id="mission" maxlength="1200"></textarea>
+        </label>
+        <label class="field" for="comment">Något du vill tillägga? <small>Valfritt. Visas utan namn i sammanställningen.</small>
+          <textarea id="comment" maxlength="1200" style="min-height:70px"></textarea>
+        </label>
+        <label class="field" for="pname">Ditt namn <small>Valfritt. Syns bara för den som skapade testet, så att hen ser vem som har svarat. Aldrig kopplat till dina svar i sammanställningen.</small>
+          <input type="text" id="pname" maxlength="80" autocomplete="name">
+        </label>
+        <div class="row">
+          <button class="btn" type="submit" id="submitBtn" disabled>Skicka mina svar</button>
+          <span class="msg" id="formMsg">Svara på alla åtta påståenden.</span>
+        </div>
+      </div>
+    </form>
+    <div id="myResult" class="panel mine hidden" aria-live="polite"></div>
+  </section>
+
+  <!-- RESULTAT -->
+  <section id="viewRes" class="stack hidden">
+    <div class="row" style="justify-content:flex-end"><button class="btn ghost" type="button" id="refreshBtn">Uppdatera</button></div>
+    <div id="resLocked" class="panel hidden"><p>Sammanställningen visas när du har skickat in dina egna svar, så att du inte påverkas av gruppens bild.</p><div class="row" style="margin-top:12px"><a class="btn" href="#test" style="text-decoration:none">Gör testet</a></div></div>
+    <div id="resEmpty" class="panel hidden"><p>Inga svar ännu. Skicka deltagarlänken till ledningsgruppen och be alla svara var för sig.</p></div>
+    <p class="msg" id="resMsg"></p>
+    <div id="resBody" class="stack hidden">
+      <div class="tiles">
+        <div class="tile"><span class="label">Antal svar</span><span class="big" id="tN">0</span></div>
+        <div class="tile"><span class="label">Gruppens snitt</span><span class="big"><span id="tAvg">0</span><small> / 16</small></span><span id="tBand"></span></div>
+        <div class="tile"><span class="label">Spridning</span><span class="big" id="tRange">–</span><span class="small muted" id="tRangeNote"></span></div>
+      </div>
+
+      <div class="panel stack">
+        <h2>Tre villkor för ett verkligt team</h2>
+        <p class="muted small">Pyramiden byggs nerifrån. Utan gemensamt uppdrag och mål blir beroende och roller otydliga, och utan dem blir reflektionen ytlig. Andel av maxpoäng per nivå.</p>
+        <div class="grid2">
+          <svg id="pyramid" viewBox="0 0 360 300" role="img" aria-label="Pyramid med gruppens resultat per nivå"></svg>
+          <div class="lvl-list" id="lvlList"></div>
+        </div>
+      </div>
+
+      <div class="panel stack">
+        <h2>Vad resultatet pekar på</h2>
+        <div class="reco" id="reco"></div>
+      </div>
+
+      <div class="panel stack">
+        <h2>Individuella totalpoäng</h2>
+        <p class="muted small">Varje prick är en person, utan namn. Stor spridning betyder att ni upplever samma grupp olika, vilket i sig är ett samtalsämne.</p>
+        <svg id="dots" viewBox="0 0 640 120" role="img" aria-label="Fördelning av individuella poäng från 0 till 16"></svg>
+      </div>
+
+      <div class="panel stack">
+        <div class="row" style="justify-content:space-between"><h2>Påstående för påstående</h2>
+          <div class="legend"><span><i style="background:var(--good)"></i>Ja</span><span><i style="background:var(--warn)"></i>Delvis</span><span><i style="background:var(--bad)"></i>Nej</span></div></div>
+        <div id="qList"></div>
+      </div>
+
+      <div class="panel stack">
+        <h2>Uppdraget med egna ord</h2>
+        <p class="muted small">Läs beskrivningarna bredvid varandra. Om de skiljer sig kraftigt saknar gruppen den samsyn som ett verkligt team kräver.</p>
+        <div class="missions" id="missions"></div>
+        <div id="commentsWrap" class="stack hidden"><h3>Övriga kommentarer</h3><div class="missions" id="comments"></div></div>
+      </div>
+
+    </div>
+    <div class="panel stack hidden" id="histPanel">
+        <h2>Tidigare omgångar</h2>
+        <div class="tablewrap"><table class="hist"><thead><tr><th>Omgång</th><th>Svar</th><th>Snitt</th><th>Uppdrag &amp; mål</th><th>Beroende &amp; roller</th><th>Samspel &amp; reflektion</th></tr></thead><tbody id="histBody"></tbody></table></div>
+      </div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="viewAdmin" class="stack hidden">
+    <div class="panel stack">
+      <h2>Länkar</h2>
+      <div class="linkbox"><b>Deltagarlänk, skicka till ledningsgruppen</b><code id="partLink"></code><div class="row"><button class="btn ghost" type="button" data-copy="partLink">Kopiera</button></div></div>
+      <div class="linkbox"><b>Din adminlänk, dela inte</b><code id="adminLink"></code><div class="row"><button class="btn ghost" type="button" data-copy="adminLink">Kopiera</button></div></div>
+    </div>
+    <div class="panel stack">
+      <h2>Har svarat</h2>
+      <div class="names" id="names"><span class="muted small">Ingen ännu.</span></div>
+    </div>
+    <div class="panel stack">
+      <h2>Fördjupad analys med AI</h2>
+      <p class="small muted">Kopierar en färdig instruktion med alla anonyma svar och uppdragsbeskrivningar. Klistra in den i Claude för en analys av samsyn, varningssignaler och nästa steg.</p>
+      <div class="row"><button class="btn" type="button" id="aiCopyBtn">Kopiera underlag för AI-analys</button><span class="msg" id="aiMsg"></span></div>
+    </div>
+    <div class="panel stack">
+      <h2>Ny omgång</h2>
+      <p class="small muted">Sparar den här omgångens sammanfattning i historiken och rensar alla svar, så att gruppen kan göra testet igen, till exempel om ett halvår. Deltagarlänken är densamma.</p>
+      <div class="row"><input type="text" id="roundName" placeholder="Namn, t.ex. Maj 2027" aria-label="Namn på ny omgång" maxlength="60"><button class="btn ghost" type="button" id="newRoundBtn">Starta ny omgång…</button></div>
+      <div class="confirm hidden" id="confirmBox"><p>Alla nuvarande svar raderas efter att sammanfattningen sparats. Det går inte att ångra.</p><div class="row"><button class="btn danger" type="button" id="confirmYes">Spara och rensa</button><button class="btn ghost" type="button" id="confirmNo">Avbryt</button></div></div>
+      <p class="msg" id="ownerMsg"></p>
+    </div>
+  </section>
+
+  <footer>Bygger på testet ”Är din ledningsgrupp ett pseudoteam?” i VD-tidningen nr 6 2026, kvalitetsgranskat av organisationspsykologen Mattias Engström. Påståendena är omformulerade. Testet är ett reflektionsverktyg och ingen vetenskaplig diagnos.</footer>
+</div>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
