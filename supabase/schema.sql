@@ -8,12 +8,12 @@
 --    gruppens id, deltagarens hemliga token eller vd:ns admin-nyckel.
 --  * Deltagarnas namn returneras bara till den som har admin-nyckeln.
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 create table if not exists public.groups (
   id          uuid primary key default gen_random_uuid(),
   name        text not null check (char_length(name) between 1 and 120),
-  admin_key   text not null default encode(gen_random_bytes(18), 'hex'),
+  admin_key   text not null default encode(extensions.gen_random_bytes(18), 'hex'),
   round_name  text,
   created_at  timestamptz not null default now()
 );
@@ -48,7 +48,7 @@ revoke all on public.groups, public.responses, public.round_history from anon, a
 -- Skapa en ny grupp. Returnerar gruppens id och vd:ns admin-nyckel.
 create or replace function public.create_group(p_name text)
 returns table (group_id uuid, admin_key text)
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 begin
   return query
     insert into groups (name, round_name)
